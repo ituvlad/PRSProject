@@ -134,6 +134,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		ON_COMMAND(ID_LAB9_PERCEPTRON, &CDibView::OnLab9Perceptron)
 		ON_COMMAND(ID_LAB10_LDA, &CDibView::OnLab10Lda)
 		ON_COMMAND(ID_LAB11_ADABOOST, &CDibView::OnLab11Adaboost)
+		ON_COMMAND(ID_PRS_PROIECT, &CDibView::OnPrsProiect)
 	END_MESSAGE_MAP()
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -1850,4 +1851,100 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 
 
 		END_PROCESSING("ADA");
+	}
+
+
+	void CDibView::OnPrsProiect()
+	{
+		BEGIN_PROCESSING();		
+
+
+		double a[3] = {0.1,0.1,0.1};
+		double niu = 1;
+		double stopThreshold = 0.0001;
+		double b[3] = {0,0,0};
+
+		for (int i=0;i<dwHeight;i++)
+		{
+			for (int j=0;j<dwWidth;j++)
+			{
+				if (lpSrc[i*w+j] == 2) {
+					dataset[counter][0] = 1;
+					dataset[counter][1] = i;
+					dataset[counter][2] = j;
+					counter++;
+				}
+				else if (lpSrc[i*w+j] == 1) {
+					dataset[counter][0] = -1;
+					dataset[counter][1] = -i;
+					dataset[counter][2] = -j;
+					counter++;
+				}
+			}
+		}
+		double value = 0;
+		int iteratii = 0;
+		do
+		{
+			b[0] = 0;b[1] = 0;b[2] = 0;
+			for (int i=0;i<counter;i++)
+			{
+				if (dataset[i][0] == 1)
+				{
+					double a1 = a[0] + dataset[i][1] * a[1] + a[2] * dataset[i][2];
+					if (a1 < 0) {
+						a[0] += niu * dataset[i][0];
+						a[1] += niu * dataset[i][1];
+						a[2] += niu * dataset[i][2];
+
+						b[0] += niu * dataset[i][0];
+						b[1] += niu * dataset[i][1];
+						b[2] += niu * dataset[i][2];
+					}
+
+				}
+				else 
+				{
+					double a1 = -1 * a[0] + dataset[i][1] * a[1] + a[2] * dataset[i][2];
+					if (a1 < 0) {
+						a[0] += niu * dataset[i][0];
+						a[1] += niu * dataset[i][1];
+						a[2] += niu * dataset[i][2];
+
+						b[0] += niu * dataset[i][0];
+						b[1] += niu * dataset[i][1];
+						b[2] += niu * dataset[i][2];
+					}
+				}
+			}
+			iteratii++;
+			value = sqrt(b[0]*b[0] + b[1]*b[1]+b[2]*b[2]);
+		}while (value >= stopThreshold);
+
+		bmiColorsDst[3].rgbRed = 0;
+		bmiColorsDst[3].rgbGreen = 0;
+		bmiColorsDst[3].rgbBlue = 64;
+
+		bmiColorsDst[3].rgbRed = 64;
+		bmiColorsDst[3].rgbGreen = 0;
+		bmiColorsDst[3].rgbBlue = 0;
+
+
+		for (int i=0;i<dwHeight;i++)
+		{
+			for (int j=0;j<dwWidth;j++)
+			{
+				if (((int)(a[0] + a[1] * i + a[2] * j)) < 0 && lpDst[i*w+j] != 2 && lpDst[i*w+j] != 1)
+				{
+					lpDst[i*w+j] = 3;
+				}
+				else if (((int)(a[0] + a[1] * i + a[2] * j)) > 0 && lpDst[i*w+j] != 1 && lpDst[i*w+j] != 2)
+				{
+					lpDst[i*w+j] = 4;
+				}
+
+			}
+		}
+
+		END_PROCESSING("Perceptron");
 	}
