@@ -1709,7 +1709,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		wStar[0] = invSw[0][0] * (meanRed.X - meanBlue.Y) + invSw[0][1] * (meanRed.Y - meanBlue.X);
 		wStar[1] = invSw[1][0] * (meanRed.X - meanBlue.Y) + invSw[1][1] * (meanRed.Y - meanBlue.X);
 
-		
+
 
 
 		CDC dc;
@@ -1751,7 +1751,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 
 	WeightedPoint D[1300];
 
-	
+
 
 	void CDibView::OnLab11Adaboost()
 	{
@@ -1760,7 +1760,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		int T = 5;
 		double m = 0;
 		int nbOfPoints = 0;
-		
+
 		for (int i=0;i<dwWidth;i++)
 			for (int j=0;j<dwHeight;j++)
 			{
@@ -1770,179 +1770,106 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 				}
 			}
 
-		for (int i=0;i<dwWidth;i++)
-			for (int j=0;j<dwHeight;j++)
-			{
-				if (lpSrc[i*w+j] == 0 || lpSrc[i*w+j] == 2)
+			for (int i=0;i<dwWidth;i++)
+				for (int j=0;j<dwHeight;j++)
 				{
-					D[nbOfPoints].x = i;
-					D[nbOfPoints].y = j;
-					D[nbOfPoints].w = 1/m;
-					nbOfPoints++;
+					if (lpSrc[i*w+j] == 0 || lpSrc[i*w+j] == 2)
+					{
+						D[nbOfPoints].x = i;
+						D[nbOfPoints].y = j;
+						D[nbOfPoints].w = 1/m;
+						nbOfPoints++;
+					}
+
 				}
 
-			}
-
-		double sum = 0;double error1=0,error2=0,error3=0,error4 = 0;
-		for (int t = 0; t < T; t++)
-		{
-			for (int i=0 ;i<nbOfPoints;i++)
-			{
-				sum += D[i].w;
-			}
-			for (int i = 0; i< nbOfPoints ;i++)
-			{
-				D[i].w = D[i].w / sum;
-			}
-
-			
-			
-			for (int i = 0 ; i < nbOfPoints; i++)
-			{
-				int th = D[i].x;
-				for (int j = 0; j<nbOfPoints;j++)
+				double sum = 0;double error1=0,error2=0,error3=0,error4 = 0;
+				for (int t = 0; t < T; t++)
 				{
-					if (D[j].x < th)
-						error1+=D[j].w;
+					for (int i=0 ;i<nbOfPoints;i++)
+					{
+						sum += D[i].w;
+					}
+					for (int i = 0; i< nbOfPoints ;i++)
+					{
+						D[i].w = D[i].w / sum;
+					}
+
+
+
+					for (int i = 0 ; i < nbOfPoints; i++)
+					{
+						int th = D[i].x;
+						for (int j = 0; j<nbOfPoints;j++)
+						{
+							if (D[j].x < th)
+								error1+=D[j].w;
+						}
+
+					}
+					for (int i = 0 ; i < nbOfPoints; i++)
+					{
+						int th = D[i].x;
+						for (int j = 0; j<nbOfPoints;j++)
+						{
+							if (D[j].x > th)
+								error2 += D[j].w;
+						}
+
+					}
+
+					for (int i = 0 ; i < nbOfPoints; i++)
+					{
+						int th = D[i].y;
+						for (int j = 0; j<nbOfPoints;j++)
+						{
+							if (D[j].y < th)
+								error3 += D[j].w;
+						}
+
+					}
+
+					for (int i = 0 ; i < nbOfPoints; i++)
+					{
+						int th = D[i].y;
+						for (int j = 0; j<nbOfPoints;j++)
+						{
+							if (D[j].x < th)
+								error4 += D[j].w;
+						}
+
+					}
 				}
-				
-			}
-			for (int i = 0 ; i < nbOfPoints; i++)
-			{
-				int th = D[i].x;
-				for (int j = 0; j<nbOfPoints;j++)
-				{
-					if (D[j].x > th)
-						error2 += D[j].w;
-				}
-				
-			}
 
-			for (int i = 0 ; i < nbOfPoints; i++)
-			{
-				int th = D[i].y;
-				for (int j = 0; j<nbOfPoints;j++)
-				{
-					if (D[j].y < th)
-						error3 += D[j].w;
-				}
-				
-			}
-
-			for (int i = 0 ; i < nbOfPoints; i++)
-			{
-				int th = D[i].y;
-				for (int j = 0; j<nbOfPoints;j++)
-				{
-					if (D[j].x < th)
-						error4 += D[j].w;
-				}
-				
-			}
-		}
-		
-		double minError = error1 < error2 ? error1 : error2;
-		int bestWeak = error1 < error2 ? 1 : 2;
-		minError = minError < error3 ? minError : error3;
-		bestWeak = minError < error3 ? bestWeak : 3;
-		minError = minError < error4 ? minError : error4;
-		bestWeak = minError < error4 ? bestWeak : 4;
+				double minError = error1 < error2 ? error1 : error2;
+				int bestWeak = error1 < error2 ? 1 : 2;
+				minError = minError < error3 ? minError : error3;
+				bestWeak = minError < error3 ? bestWeak : 3;
+				minError = minError < error4 ? minError : error4;
+				bestWeak = minError < error4 ? bestWeak : 4;
 
 
 
-		END_PROCESSING("ADA");
+				END_PROCESSING("ADA");
 	}
 
-
+	WeightedPoint unclassifiedPoints[1000];
+	int unclassfiedPointsCounter;
 	void CDibView::OnPrsProiect()
 	{
 		BEGIN_PROCESSING();		
 
-
-		double a[3] = {0.1,0.1,0.1};
-		double niu = 1;
-		double stopThreshold = 0.0001;
-		double b[3] = {0,0,0};
-
-		for (int i=0;i<dwHeight;i++)
+		for (int i = 0; i < dwHeight ; i++)
 		{
-			for (int j=0;j<dwWidth;j++)
+			for (int j=0; j < dwWidth; j++)
 			{
-				if (lpSrc[i*w+j] == 2) {
-					dataset[counter][0] = 1;
-					dataset[counter][1] = i;
-					dataset[counter][2] = j;
-					counter++;
-				}
-				else if (lpSrc[i*w+j] == 1) {
-					dataset[counter][0] = -1;
-					dataset[counter][1] = -i;
-					dataset[counter][2] = -j;
-					counter++;
-				}
-			}
-		}
-		double value = 0;
-		int iteratii = 0;
-		do
-		{
-			b[0] = 0;b[1] = 0;b[2] = 0;
-			for (int i=0;i<counter;i++)
-			{
-				if (dataset[i][0] == 1)
+				if (lpSrc[i*w+j] != 255)
 				{
-					double a1 = a[0] + dataset[i][1] * a[1] + a[2] * dataset[i][2];
-					if (a1 < 0) {
-						a[0] += niu * dataset[i][0];
-						a[1] += niu * dataset[i][1];
-						a[2] += niu * dataset[i][2];
-
-						b[0] += niu * dataset[i][0];
-						b[1] += niu * dataset[i][1];
-						b[2] += niu * dataset[i][2];
-					}
-
+					unclassifiedPoints[unclassfiedPointsCounter].x = i;
+					unclassifiedPoints[unclassfiedPointsCounter].y = j;
+					unclassifiedPoints[unclassfiedPointsCounter].w = -1;
+					unclassfiedPointsCounter++;
 				}
-				else 
-				{
-					double a1 = -1 * a[0] + dataset[i][1] * a[1] + a[2] * dataset[i][2];
-					if (a1 < 0) {
-						a[0] += niu * dataset[i][0];
-						a[1] += niu * dataset[i][1];
-						a[2] += niu * dataset[i][2];
-
-						b[0] += niu * dataset[i][0];
-						b[1] += niu * dataset[i][1];
-						b[2] += niu * dataset[i][2];
-					}
-				}
-			}
-			iteratii++;
-			value = sqrt(b[0]*b[0] + b[1]*b[1]+b[2]*b[2]);
-		}while (value >= stopThreshold);
-
-		bmiColorsDst[3].rgbRed = 0;
-		bmiColorsDst[3].rgbGreen = 0;
-		bmiColorsDst[3].rgbBlue = 64;
-
-		bmiColorsDst[3].rgbRed = 64;
-		bmiColorsDst[3].rgbGreen = 0;
-		bmiColorsDst[3].rgbBlue = 0;
-
-
-		for (int i=0;i<dwHeight;i++)
-		{
-			for (int j=0;j<dwWidth;j++)
-			{
-				if (((int)(a[0] + a[1] * i + a[2] * j)) < 0 && lpDst[i*w+j] != 2 && lpDst[i*w+j] != 1)
-				{
-					lpDst[i*w+j] = 3;
-				}
-				else if (((int)(a[0] + a[1] * i + a[2] * j)) > 0 && lpDst[i*w+j] != 1 && lpDst[i*w+j] != 2)
-				{
-					lpDst[i*w+j] = 4;
-				}
-
 			}
 		}
 
