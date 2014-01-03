@@ -1853,8 +1853,119 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 				END_PROCESSING("ADA");
 	}
 
-	WeightedPoint unclassifiedPoints[1000];
-	int unclassfiedPointsCounter;
+	struct ArcT{
+		int x1;
+		int y1;
+		int x2;
+		int y2;
+		double w;
+		bool visited;
+	};
+
+#define RADIUS 10
+	WeightedPoint unclassifiedPoints[1000],vNew[900];
+	ArcT arcs[900],selectedArcs[900];
+	int unclassfiedPointsCounter, arcsCounter, selectedArcsCounter,vNewCounter;
+
+	double calculateDistance(WeightedPoint firstPoint, WeightedPoint secondPoint)
+	{
+		double aux1 = (firstPoint.x - secondPoint.x) * (firstPoint.x - secondPoint.x);
+		double aux2 = (firstPoint.y - secondPoint.y) * (firstPoint.y - secondPoint.y);
+		double distance = sqrt (aux1 + aux2);
+		return distance;
+	}
+
+	void constructCompleteGraph()
+	{
+		for (int i = 0; i < unclassfiedPointsCounter - 1; i++)
+		{
+			for (int j = i + 1; j < unclassfiedPointsCounter; j++)
+			{
+				if (unclassifiedPoints[i].x != unclassifiedPoints[j].x
+					&& unclassifiedPoints[i].y != unclassifiedPoints[j].y)
+				{
+					arcs[arcsCounter].x1 = unclassifiedPoints[i].x;
+					arcs[arcsCounter].y1 = unclassifiedPoints[i].y;
+					arcs[arcsCounter].x2 = unclassifiedPoints[j].x;
+					arcs[arcsCounter].y2 = unclassifiedPoints[j].y;
+					arcs[arcsCounter].w = calculateDistance(unclassifiedPoints[i],unclassifiedPoints[j]);
+					arcs[arcsCounter].visited = false;
+					arcsCounter++;
+				}
+			}
+		}
+	}
+
+	void sortArcsByWeight()
+	{
+		for (int i = 0; i < arcsCounter; i++)
+		{
+			for (int j = i+1; j < arcsCounter; j++)
+			{
+				if (arcs[i].w > arcs[j].w)
+				{
+					ArcT aux = arcs[i];
+					arcs[i] = arcs[j];
+					arcs[j] = aux;
+				}
+			}
+		}
+	}
+
+	bool existUnvisitedEdges()
+	{
+		for (int i = 0; i < arcsCounter; i++)
+		{
+			if (arcs[i].visited == false)
+				return true;
+		}
+		return false;
+	}
+
+	bool isFirstEndContained(ArcT arc)
+	{
+		for (int i = 0; i < arcsCounter; i++)
+		{
+			if (vNew[i].x == arc.x1 && vNew[i].y == arc.y1)
+				return true;
+		}
+		return false;
+	}
+
+	bool isSecondEndNotContained(ArcT arc)
+	{
+		for (int i = 0; i < arcsCounter; i++)
+		{
+			if (vNew[i].x == arc.x2 && vNew[i].y == arc.y2)
+				return false;
+		}
+		return true;
+	}
+
+	void prim()
+	{
+		vNew[vNewCounter] = unclassifiedPoints[0];
+		while (vNewCounter < unclassfiedPointsCounter)
+		{
+			ArcT minArc;
+			minArc.w = INT_MAX;
+			for (int i = 0; i < arcsCounter; i++)
+			{
+				if (minArc.w > arcs[i].w && isFirstEndContained(arcs[i]) && isSecondEndNotContained(arcs[i])) 
+				{
+					minArc.x1 = arcs[i].x1;
+					minArc.y1 = arcs[i].y1;
+					minArc.x2 = arcs[i].x2;
+					minArc.y2 = arcs[i].y2;
+					minArc.w = arcs[i].w;
+				}
+			}
+			vNewCounter++;
+			vNew[vNewCounter].x = minArc.x2;
+			vNew[vNewCounter].y = minArc.y2;
+		}
+	}
+
 	void CDibView::OnPrsProiect()
 	{
 		BEGIN_PROCESSING();		
@@ -1873,5 +1984,11 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 			}
 		}
 
-		END_PROCESSING("Perceptron");
+		constructCompleteGraph();
+		prim();
+		arcs;
+		//prims();
+		//selectedArcs;
+
+		END_PROCESSING("Project");
 	}
