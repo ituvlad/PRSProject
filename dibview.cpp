@@ -1963,6 +1963,19 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 			vNewCounter++;
 			vNew[vNewCounter].x = minArc.x2;
 			vNew[vNewCounter].y = minArc.y2;
+			vNew[vNewCounter].w = minArc.w;
+
+			selectedArcs[selectedArcsCounter] = minArc;
+			selectedArcsCounter++;
+		}
+	}
+
+	void trunkBigEdges()
+	{
+		for (int i = 0; i < selectedArcsCounter; i++)
+		{
+			if (selectedArcs[i].w > RADIUS)
+				selectedArcs[i].w = -1;
 		}
 	}
 
@@ -1986,9 +1999,8 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 
 		constructCompleteGraph();
 		prim();
-		arcs;
-		//prims();
-		//selectedArcs;
+		trunkBigEdges();
+		selectedArcs;
 
 		END_PROCESSING("Project");
 	}
