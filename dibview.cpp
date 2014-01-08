@@ -1242,6 +1242,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		lpDst[matrice[i][j]*w + smth[i][j]] = 0;
 		}
 		}*/
+
 		END_PROCESSING("lab6");
 
 
