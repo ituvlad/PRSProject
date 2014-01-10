@@ -1855,17 +1855,16 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	}
 
 	struct ArcT{
-		int x1;
-		int y1;
-		int x2;
-		int y2;
+		WeightedPoint p1;
+		WeightedPoint p2;
 		double w;
 		bool visited;
 	};
-
+	const int NOT_VISITED = -100;
+	const int ACTUALLY_MATA = -666;
 #define RADIUS 10
-	WeightedPoint unclassifiedPoints[1000],vNew[900];
-	ArcT arcs[900],selectedArcs[900];
+	WeightedPoint unclassifiedPoints[5000],vNew[5000];
+	ArcT arcs[10000],selectedArcs[10000];
 	int unclassfiedPointsCounter, arcsCounter, selectedArcsCounter,vNewCounter;
 
 	double calculateDistance(WeightedPoint firstPoint, WeightedPoint secondPoint)
@@ -1878,17 +1877,14 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 
 	void constructCompleteGraph()
 	{
-		for (int i = 0; i < unclassfiedPointsCounter - 1; i++)
+		for (int i = 0; i < unclassfiedPointsCounter; i++)
 		{
-			for (int j = i + 1; j < unclassfiedPointsCounter; j++)
+			for (int j = i; j < unclassfiedPointsCounter; j++)
 			{
-				if (unclassifiedPoints[i].x != unclassifiedPoints[j].x
-					&& unclassifiedPoints[i].y != unclassifiedPoints[j].y)
+				if (i!=j)
 				{
-					arcs[arcsCounter].x1 = unclassifiedPoints[i].x;
-					arcs[arcsCounter].y1 = unclassifiedPoints[i].y;
-					arcs[arcsCounter].x2 = unclassifiedPoints[j].x;
-					arcs[arcsCounter].y2 = unclassifiedPoints[j].y;
+					arcs[arcsCounter].p1 = unclassifiedPoints[i];
+					arcs[arcsCounter].p2 = unclassifiedPoints[j];
 					arcs[arcsCounter].w = calculateDistance(unclassifiedPoints[i],unclassifiedPoints[j]);
 					arcs[arcsCounter].visited = false;
 					arcsCounter++;
@@ -1923,52 +1919,45 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		return false;
 	}
 
-	bool isFirstEndContained(ArcT arc)
-	{
-		for (int i = 0; i < arcsCounter; i++)
+	bool isPointContained(WeightedPoint p){
+		for (int i = 0; i < vNewCounter; i++)
 		{
-			if (vNew[i].x == arc.x1 && vNew[i].y == arc.y1)
+			if (vNew[i].x == p.x && vNew[i].y == p.y)
 				return true;
 		}
 		return false;
 	}
 
-	bool isSecondEndNotContained(ArcT arc)
-	{
-		for (int i = 0; i < arcsCounter; i++)
-		{
-			if (vNew[i].x == arc.x2 && vNew[i].y == arc.y2)
-				return false;
-		}
-		return true;
-	}
-
 	void prim()
 	{
 		vNew[vNewCounter] = unclassifiedPoints[0];
+		vNewCounter++;
 		while (vNewCounter < unclassfiedPointsCounter)
 		{
 			ArcT minArc;
+			minArc.p1.x = NOT_VISITED;
+			minArc.p2.x = NOT_VISITED;
 			minArc.w = INT_MAX;
 			for (int i = 0; i < arcsCounter; i++)
 			{
-				if (minArc.w > arcs[i].w && isFirstEndContained(arcs[i]) && isSecondEndNotContained(arcs[i])) 
+				if (minArc.w > arcs[i].w && isPointContained(arcs[i].p1) && !isPointContained(arcs[i].p2)) 
 				{
-					minArc.x1 = arcs[i].x1;
-					minArc.y1 = arcs[i].y1;
-					minArc.x2 = arcs[i].x2;
-					minArc.y2 = arcs[i].y2;
-					minArc.w = arcs[i].w;
+					minArc = arcs[i];
 				}
 			}
-			vNewCounter++;
-			vNew[vNewCounter].x = minArc.x2;
-			vNew[vNewCounter].y = minArc.y2;
+		
+			vNew[vNewCounter] = minArc.p2;
 			vNew[vNewCounter].w = minArc.w;
+			vNewCounter++;
 
-			selectedArcs[selectedArcsCounter] = minArc;
 			selectedArcsCounter++;
+			selectedArcs[selectedArcsCounter] = minArc;
 		}
+	}
+
+	void deleteDuplicates()
+	{
+
 	}
 
 	void trunkBigEdges()
@@ -1979,6 +1968,32 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 				selectedArcs[i].w = -1;
 		}
 	}
+
+	
+
+	WeightedPoint getNextPoint(WeightedPoint p){
+
+		for(int i = 0; i < selectedArcsCounter; i++){
+			if(selectedArcs[i].p1.x == p.x && selectedArcs[i].p1.y == p.y){
+				return selectedArcs[i].p2;
+			}
+		}
+		WeightedPoint mata;
+		mata.w == ACTUALLY_MATA;
+		return mata;
+	}
+	int currentClass = 0;
+	void dfs(WeightedPoint p){
+
+		p.w = currentClass;
+		WeightedPoint nextPoint = getNextPoint(p);
+		if(nextPoint.w != NOT_VISITED){
+			return;
+		}
+		dfs(nextPoint);
+
+	}
+
 
 	void CDibView::OnPrsProiect()
 	{
@@ -2002,6 +2017,20 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		prim();
 		trunkBigEdges();
 		selectedArcs;
+		vNew;
 
+
+		for (int i = 0; i<vNewCounter; i++){
+			vNew[i].w = NOT_VISITED;
+		}
+
+		for (int i = 0; i<vNewCounter; i++){
+			if(vNew[i].w == NOT_VISITED){
+				dfs(vNew[i]);
+				currentClass++;
+			}
+		}
+
+		int aofka=0;
 		END_PROCESSING("Project");
 	}
