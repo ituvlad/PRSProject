@@ -23,6 +23,8 @@ using namespace std;
 #include "dibapi.h"
 #include "mainfrm.h"
 #include <math.h>
+#include <stack>
+#include <list>
 #include "HRTimer.h"
 
 #ifdef _DEBUG
@@ -135,6 +137,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		ON_COMMAND(ID_LAB10_LDA, &CDibView::OnLab10Lda)
 		ON_COMMAND(ID_LAB11_ADABOOST, &CDibView::OnLab11Adaboost)
 		ON_COMMAND(ID_PRS_PROIECT, &CDibView::OnPrsProiect)
+		ON_COMMAND(ID_PRS_PROIECT2, &CDibView::OnPrsProiect2)
 	END_MESSAGE_MAP()
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -1862,9 +1865,9 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	};
 	const int NOT_VISITED = -100;
 	const int ACTUALLY_MATA = -666;
-#define RADIUS 10
-	WeightedPoint unclassifiedPoints[5000],vNew[5000];
-	ArcT arcs[10000],selectedArcs[10000];
+#define RADIUS 1.9
+	WeightedPoint unclassifiedPoints[100000],vNew[100000];
+	ArcT arcs[1000000],selectedArcs[1000000];
 	int unclassfiedPointsCounter, arcsCounter, selectedArcsCounter,vNewCounter;
 
 	double calculateDistance(WeightedPoint firstPoint, WeightedPoint secondPoint)
@@ -1879,7 +1882,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	{
 		for (int i = 0; i < unclassfiedPointsCounter; i++)
 		{
-			for (int j = i; j < unclassfiedPointsCounter; j++)
+			for (int j = 0; j < unclassfiedPointsCounter; j++)
 			{
 				if (i!=j)
 				{
@@ -1945,19 +1948,14 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 					minArc = arcs[i];
 				}
 			}
-		
+
 			vNew[vNewCounter] = minArc.p2;
 			vNew[vNewCounter].w = minArc.w;
 			vNewCounter++;
 
-			selectedArcsCounter++;
 			selectedArcs[selectedArcsCounter] = minArc;
+			selectedArcsCounter++;
 		}
-	}
-
-	void deleteDuplicates()
-	{
-
 	}
 
 	void trunkBigEdges()
@@ -1969,31 +1967,54 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		}
 	}
 
-	
+	int currentClass = 0;
 
-	WeightedPoint getNextPoint(WeightedPoint p){
+	stack <WeightedPoint*> popo;
 
-		for(int i = 0; i < selectedArcsCounter; i++){
-			if(selectedArcs[i].p1.x == p.x && selectedArcs[i].p1.y == p.y){
-				return selectedArcs[i].p2;
+	list<WeightedPoint *> getAdjacentPoints(WeightedPoint p){
+		list<WeightedPoint *> l;
+		for(int i=0;i<selectedArcsCounter;i++){
+			if(selectedArcs[i].p1.x == p.x && selectedArcs[i].p1.y == p.y && selectedArcs[i].w != -1){
+				for (int j = 0; j<vNewCounter; j++){
+					if(vNew[j].x == selectedArcs[i].p2.x && vNew[j].y==selectedArcs[i].p2.y){
+						l.push_front(&vNew[j]);
+					}
+				}
 			}
 		}
-		WeightedPoint mata;
-		mata.w == ACTUALLY_MATA;
-		return mata;
+		return l;
 	}
-	int currentClass = 0;
-	void dfs(WeightedPoint p){
 
-		p.w = currentClass;
-		WeightedPoint nextPoint = getNextPoint(p);
-		if(nextPoint.w != NOT_VISITED){
-			return;
+	void dfs(WeightedPoint &p){
+
+		popo.push(&p);
+
+		while(!popo.empty()){
+			WeightedPoint* po = popo.top();
+			popo.pop();
+			if(po->w == NOT_VISITED){
+				po->w = currentClass;
+				list<WeightedPoint *> lpopo = getAdjacentPoints(*po);
+				for(list<WeightedPoint*>::iterator list_iter = lpopo.begin();  list_iter != lpopo.end(); list_iter++)
+				{
+					popo.push(*list_iter);
+				}
+			}
+
 		}
-		dfs(nextPoint);
-
 	}
 
+	void initArrays()
+	{
+		for (int i = 0; i<vNewCounter; i++){
+			vNew[i].w = NOT_VISITED;
+		}
+
+		for(int i = 0; i<selectedArcsCounter; i++){
+			selectedArcs[i].p1.w = NOT_VISITED;
+			selectedArcs[i].p2.w = NOT_VISITED;
+		}
+	}
 
 	void CDibView::OnPrsProiect()
 	{
@@ -2019,10 +2040,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		selectedArcs;
 		vNew;
 
-
-		for (int i = 0; i<vNewCounter; i++){
-			vNew[i].w = NOT_VISITED;
-		}
+		initArrays();
 
 		for (int i = 0; i<vNewCounter; i++){
 			if(vNew[i].w == NOT_VISITED){
@@ -2031,6 +2049,45 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 			}
 		}
 
+		double overallScore = 0;
+
+		for(int i = 0; i<selectedArcsCounter; i++){
+			overallScore+= selectedArcs[i].w;
+		}
+
+		for (int i = 0; i < vNewCounter; i++)
+		{
+			switch ((int)vNew[i].w)
+			{
+			case 0: 
+				lpDst[vNew[i].x * w + vNew[i].y] = 255;
+				break;
+			case 1: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 255;
+				break;
+			case 2: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 255;
+				break;
+			case 3: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 4;
+				break;
+			case 4: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 5;
+				break;
+			case 5: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 6;
+				break;
+			}
+		}
+
 		int aofka=0;
 		END_PROCESSING("Project");
+	}
+
+
+	void CDibView::OnPrsProiect2()
+	{
+
+
+
 	}

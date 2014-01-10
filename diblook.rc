@@ -201,6 +201,7 @@ BEGIN
             MENUITEM "AdaBoost",                    ID_LAB11_ADABOOST
         END
         MENUITEM "Proiect",                     ID_PRS_PROIECT
+        MENUITEM "Proiect2",                    ID_PRS_PROIECT2
     END
 END
 

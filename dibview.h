@@ -77,6 +77,7 @@ public:
 	afx_msg void OnLab10Lda();
 	afx_msg void OnLab11Adaboost();
 	afx_msg void OnPrsProiect();
+	afx_msg void OnPrsProiect2();
 };
 
 /////////////////////////////////////////////////////////////////////////////
