@@ -1866,9 +1866,9 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	const int NOT_VISITED = -100;
 	const int ACTUALLY_MATA = -666;
 #define RADIUS 1.9
-	WeightedPoint unclassifiedPoints[100000],vNew[100000];
+	WeightedPoint unclassifiedPoints[128][100000],vNew[100000];
 	ArcT arcs[1000000],selectedArcs[1000000];
-	int unclassfiedPointsCounter, arcsCounter, selectedArcsCounter,vNewCounter;
+	int unclassfiedPointsCounter[128], arcsCounter, selectedArcsCounter,vNewCounter;
 
 	double calculateDistance(WeightedPoint firstPoint, WeightedPoint secondPoint)
 	{
@@ -1878,17 +1878,17 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		return distance;
 	}
 
-	void constructCompleteGraph()
+	void constructCompleteGraph(int m)
 	{
-		for (int i = 0; i < unclassfiedPointsCounter; i++)
+		for (int i = 0; i < unclassfiedPointsCounter[m]; i++)
 		{
-			for (int j = 0; j < unclassfiedPointsCounter; j++)
+			for (int j = 0; j < unclassfiedPointsCounter[m]; j++)
 			{
 				if (i!=j)
 				{
-					arcs[arcsCounter].p1 = unclassifiedPoints[i];
-					arcs[arcsCounter].p2 = unclassifiedPoints[j];
-					arcs[arcsCounter].w = calculateDistance(unclassifiedPoints[i],unclassifiedPoints[j]);
+					arcs[arcsCounter].p1 = unclassifiedPoints[m][i];
+					arcs[arcsCounter].p2 = unclassifiedPoints[m][j];
+					arcs[arcsCounter].w = calculateDistance(unclassifiedPoints[m][i],unclassifiedPoints[m][j]);
 					arcs[arcsCounter].visited = false;
 					arcsCounter++;
 				}
@@ -1931,11 +1931,11 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		return false;
 	}
 
-	void prim()
+	void prim(int m)
 	{
-		vNew[vNewCounter] = unclassifiedPoints[0];
+		vNew[vNewCounter] = unclassifiedPoints[m][0];
 		vNewCounter++;
-		while (vNewCounter < unclassfiedPointsCounter)
+		while (vNewCounter < unclassfiedPointsCounter[m])
 		{
 			ArcT minArc;
 			minArc.p1.x = NOT_VISITED;
@@ -2016,43 +2016,118 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		}
 	}
 
-	void CDibView::OnPrsProiect()
-	{
-		BEGIN_PROCESSING();		
+	double templateImages[128][46400];
+	int nrTemplateImages=0;
+	double overallScore[128];
 
+	void loadTemplateImages(){
+		BYTE *lpSI,*lpSrcI;
+		DWORD dwWidthI,dwHeightI,wI;
+		HDIB hBmpSrcI;
+		CFile fileIn;
+		CFileException fE;
+		AfxEnableControlContainer();
+		char buffer[MAX_PATH];
+		BROWSEINFO bi;
+		ZeroMemory(&bi, sizeof(bi));
+		//SHGetPathFromIDList(SHBrowseForFolder(&bi), buffer);
+		//if (strcmp(buffer,"")==0) return;
+		char directoryPath[MAX_PATH];
+		CFileFind fFind;
+		int nextFile;
+		CString msg;
+
+		strcpy(directoryPath,"C:\\Users\\alexcosma\\Desktop\\Facultate\\Semestrul VII\\Pattern Recognition Systems\\Laboratory\\Project\\testimagesfortheprsproject\\templates");
+		strcat(directoryPath,"\\*zoom.bmp"); // search files with the name face* and having the extension .bmp
+		nextFile=fFind.FindFile(directoryPath);
+
+		while (nextFile)
+		{
+			nrTemplateImages++;
+			nextFile=fFind.FindNextFile();
+			CString fnIn=fFind.GetFilePath();
+			fileIn.Open(fnIn, CFile::modeRead | CFile::shareDenyWrite, &fE);
+			hBmpSrcI = (HDIB)::ReadDIBFile(fileIn);
+			fileIn.Close();
+			lpSI = (BYTE*)::GlobalLock((HGLOBAL)hBmpSrcI);
+			dwWidthI = ::DIBWidth((LPSTR)lpSI);
+			dwHeightI = ::DIBHeight((LPSTR)lpSI);
+			lpSrcI=(BYTE*)::FindDIBBits((LPSTR)lpSI);
+			DWORD wI=WIDTHBYTES(dwWidthI*8);
+
+
+			for (int i = 0; i < 290 ; i++)
+			{
+				for (int j=0; j < 160; j++)
+				{
+					templateImages[nrTemplateImages-1][i*wI+j] = lpSrcI[i*wI+j];
+				}
+			}
+			::GlobalUnlock((HGLOBAL)hBmpSrcI);
+		}
+		//msg.Format("Found and processed %d images",nrImages);
+		//AfxMessageBox(msg);
+	}
+
+	void createUnclassifiedPoints(int dwHeight, int dwWidth, int w, int m){
 		for (int i = 0; i < dwHeight ; i++)
 		{
 			for (int j=0; j < dwWidth; j++)
 			{
-				if (lpSrc[i*w+j] != 255)
+				if (templateImages[0][i*w+j] != 255)
 				{
-					unclassifiedPoints[unclassfiedPointsCounter].x = i;
-					unclassifiedPoints[unclassfiedPointsCounter].y = j;
-					unclassifiedPoints[unclassfiedPointsCounter].w = -1;
-					unclassfiedPointsCounter++;
+					unclassifiedPoints[m][unclassfiedPointsCounter[m]].x = i;
+					unclassifiedPoints[m][unclassfiedPointsCounter[m]].y = j;
+					unclassifiedPoints[m][unclassfiedPointsCounter[m]].w = -1;
+					unclassfiedPointsCounter[m]++;
 				}
 			}
 		}
+	}
 
-		constructCompleteGraph();
-		prim();
-		trunkBigEdges();
-		selectedArcs;
-		vNew;
+	void resetCounters(){
+		vNewCounter=0;
+		selectedArcsCounter=0;
+		arcsCounter=0;
+		currentClass=0;
+	}
 
-		initArrays();
+	void CDibView::OnPrsProiect()
+	{
+		BEGIN_PROCESSING();		
 
-		for (int i = 0; i<vNewCounter; i++){
-			if(vNew[i].w == NOT_VISITED){
-				dfs(vNew[i]);
-				currentClass++;
-			}
+		loadTemplateImages();
+
+		// this is done quickly and doesn't exceed max space
+		for(int m = 0; m<nrTemplateImages;m++){
+			createUnclassifiedPoints(dwHeight,dwWidth,w,m);
 		}
 
-		double overallScore = 0;
 
-		for(int i = 0; i<selectedArcsCounter; i++){
-			overallScore+= selectedArcs[i].w;
+		//! here, one can override the nrTemplateImages on which the algorhithm should run on
+
+		nrTemplateImages = 10;
+
+		// however, we have to use the same arcs/selectedArcs and vNew in order to not exceed the space => reuse
+		for(int m = 0; m<nrTemplateImages;m++){
+			constructCompleteGraph(m);
+			prim(m);
+			trunkBigEdges();
+			selectedArcs;
+			vNew;
+			initArrays();
+			// dfs
+			for (int i = 0; i<vNewCounter; i++){
+				if(vNew[i].w == NOT_VISITED){
+					dfs(vNew[i]);
+					currentClass++;
+				}
+			}
+			for(int i = 0; i<selectedArcsCounter; i++){
+				overallScore[m]+= selectedArcs[i].w;
+			}
+
+			resetCounters();
 		}
 
 		for (int i = 0; i < vNewCounter; i++)
@@ -2080,7 +2155,6 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 			}
 		}
 
-		int aofka=0;
 		END_PROCESSING("Project");
 	}
 
