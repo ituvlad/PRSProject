@@ -20,6 +20,7 @@
 using namespace std;
 
 #include "dibdoc.h"
+#include <fstream>	
 #include "dibview.h"
 #include "dibapi.h"
 #include "mainfrm.h"
@@ -2209,8 +2210,8 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 
 		//! here, one can override the nrTemplateImages on which the algorhithm should run on
 
-		nrTemplateImages = 10;
-		bool skip = true;
+		nrTemplateImages = 120;
+		bool skip = false;
 
 		if(skip){
 			mockOverallScore();
@@ -2241,6 +2242,13 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		}
 
 		sortArray(overallScore,nrTemplateImages);
+
+		ofstream arrayData("scores.txt"); // File Creation(on C drive)
+
+		for(int k=0;k<nrTemplateImages;k++)
+		{
+			arrayData<<overallScore[k]<<endl; //Outputs array to txtFile
+		}
 
 		vector<Cluster> clusterfuck;
 		initClusters(clusterfuck);
