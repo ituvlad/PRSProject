@@ -15,6 +15,7 @@
 #include <afxdisp.h>
 #include <algorithm>
 #include <iostream>
+#include "Tree.h"
 #include "Knn.h"
 using namespace std;
 
@@ -2087,7 +2088,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		}
 	}
 
-	void Reset(){
+	void reset(){
 		vNewCounter=0;
 		selectedArcsCounter=0;
 		arcsCounter=0;
@@ -2098,6 +2099,9 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	void CDibView::OnPrsProiect()
 	{
 		BEGIN_PROCESSING();		
+		
+		Tree t;
+		t.insert(10);
 
 		loadTemplateImages();
 
@@ -2129,7 +2133,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 				overallScore[m]+= selectedArcs[i].w;
 			}
 
-			Reset();
+			reset();
 		}
 
 		for (int i = 0; i < vNewCounter; i++)
