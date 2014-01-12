@@ -1866,7 +1866,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	const int NOT_VISITED = -100;
 	const int ACTUALLY_MATA = -666;
 #define RADIUS 1.9
-	WeightedPoint unclassifiedPoints[128][100000],vNew[100000];
+	WeightedPoint unclassifiedPoints[140][100000],vNew[100000];
 	ArcT arcs[1000000],selectedArcs[1000000];
 	int unclassfiedPointsCounter[128], arcsCounter, selectedArcsCounter,vNewCounter;
 
@@ -1943,9 +1943,11 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 			minArc.w = INT_MAX;
 			for (int i = 0; i < arcsCounter; i++)
 			{
-				if (minArc.w > arcs[i].w && isPointContained(arcs[i].p1) && !isPointContained(arcs[i].p2)) 
+				if ( isPointContained(arcs[i].p1) && !isPointContained(arcs[i].p2) && minArc.w > arcs[i].w) 
 				{
 					minArc = arcs[i];
+					if (minArc.w == 1.4142135623730951) 
+						break;
 				}
 			}
 
@@ -2037,7 +2039,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		int nextFile;
 		CString msg;
 
-		strcpy(directoryPath,"C:\\Users\\alexcosma\\Desktop\\Facultate\\Semestrul VII\\Pattern Recognition Systems\\Laboratory\\Project\\testimagesfortheprsproject\\templates");
+		strcpy(directoryPath,"D:\\GoogleDrive\\school\\PRS\\Proiect\\test_images\\templates");
 		strcat(directoryPath,"\\*zoom.bmp"); // search files with the name face* and having the extension .bmp
 		nextFile=fFind.FindFile(directoryPath);
 
@@ -2074,7 +2076,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		{
 			for (int j=0; j < dwWidth; j++)
 			{
-				if (templateImages[0][i*w+j] != 255)
+				if (templateImages[m][i*w+j] != 255)
 				{
 					unclassifiedPoints[m][unclassfiedPointsCounter[m]].x = i;
 					unclassifiedPoints[m][unclassfiedPointsCounter[m]].y = j;
@@ -2085,11 +2087,12 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		}
 	}
 
-	void resetCounters(){
+	void Reset(){
 		vNewCounter=0;
 		selectedArcsCounter=0;
 		arcsCounter=0;
 		currentClass=0;
+		
 	}
 
 	void CDibView::OnPrsProiect()
@@ -2113,8 +2116,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 			constructCompleteGraph(m);
 			prim(m);
 			trunkBigEdges();
-			selectedArcs;
-			vNew;
+			
 			initArrays();
 			// dfs
 			for (int i = 0; i<vNewCounter; i++){
@@ -2127,7 +2129,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 				overallScore[m]+= selectedArcs[i].w;
 			}
 
-			resetCounters();
+			Reset();
 		}
 
 		for (int i = 0; i < vNewCounter; i++)
