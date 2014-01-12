@@ -26,6 +26,7 @@ using namespace std;
 #include <math.h>
 #include <stack>
 #include <list>
+#include <vector>
 #include "HRTimer.h"
 
 #ifdef _DEBUG
@@ -2022,6 +2023,26 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	double templateImages[128][46400];
 	int nrTemplateImages=0;
 	double overallScore[128];
+	double scaledImages[128][11600];
+
+	void initScaleImages(){
+		for(int i=0;i<128;i++)
+			for(int j=0;j<11600;j++)
+				scaledImages[i][j]=255;				
+	}
+	void computeScaledImages(int wI){
+		initScaleImages();
+		for(int m =0 ;m<128;m++){
+			for (int i = 0; i < 289 ; i++)
+			{
+				for (int j=0; j < 159; j++)
+				{
+					if(templateImages[m][i*wI+j] != 255 || templateImages[m][(i+1)*wI+j] != 255 || templateImages[m][i*wI+(j+1)] != 255 || templateImages[m][(i+1)*wI+(j+1)] != 255)
+						scaledImages[m][(i*wI)/2+j/2] = 0;
+				}
+			}
+		}
+	}
 
 	void loadTemplateImages(){
 		BYTE *lpSI,*lpSrcI;
@@ -2040,7 +2061,8 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		int nextFile;
 		CString msg;
 
-		strcpy(directoryPath,"D:\\GoogleDrive\\school\\PRS\\Proiect\\test_images\\templates");
+		//strcpy(directoryPath,"D:\\GoogleDrive\\school\\PRS\\Proiect\\test_images\\templates");
+		strcpy(directoryPath,"C:\\Users\\alexcosma\\Desktop\\Facultate\\Semestrul VII\\Pattern Recognition Systems\\Laboratory\\Project\\testimagesfortheprsproject\\templates");
 		strcat(directoryPath,"\\*zoom.bmp"); // search files with the name face* and having the extension .bmp
 		nextFile=fFind.FindFile(directoryPath);
 
@@ -2068,9 +2090,14 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 			}
 			::GlobalUnlock((HGLOBAL)hBmpSrcI);
 		}
+
+		computeScaledImages(160);
 		//msg.Format("Found and processed %d images",nrImages);
 		//AfxMessageBox(msg);
 	}
+
+
+
 
 	void createUnclassifiedPoints(int dwHeight, int dwWidth, int w, int m){
 		for (int i = 0; i < dwHeight ; i++)
@@ -2093,16 +2120,85 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		selectedArcsCounter=0;
 		arcsCounter=0;
 		currentClass=0;
-		
+
+	}
+
+	void sortArray(double * arr,int n){
+		double temp;
+		for(int i=0;i<n;i++)
+		{
+			for(int j=i+1;j<n;j++)
+			{
+				if(arr[i]>arr[j])
+				{
+					swap(arr[i],arr[j]);
+				}
+			}
+		}
+	}
+
+	void mockOverallScore(){
+		overallScore[0]=846.81;
+		overallScore[1]=1092.5533;
+		overallScore[2]=1121.050;
+		overallScore[3]=1182.276;
+		overallScore[4]=845.2;
+		overallScore[5]=842.3;
+		overallScore[6]=940.3;
+		overallScore[7]=944.4;
+		overallScore[8]=950.3;
+		overallScore[9]=950.4;
+	}
+	struct Cluster{
+		int indexes[120];
+		double values[120];
+		int size;
+		double avarage;
+
+		Cluster(){
+			for(int i=0; i<120;i++){
+				indexes[i]=-1;
+				values[i]=0;
+			}
+			size=0;
+			avarage=0;
+		}
+	};
+
+	void insertValueInCluster(Cluster &c, int index){
+		c.values[c.size]=overallScore[index];
+		c.indexes[c.size]=index;
+		c.size++;
+		double sum=0;
+		for(int i=0;i<c.size;i++){
+			sum+=c.values[i];
+		}
+		c.avarage = sum/(double) c.size;
+	}
+	const int delta = 10;
+	void initClusters(vector<Cluster> &clusterfuck){
+		Cluster first;
+		insertValueInCluster(first,0);
+		clusterfuck.push_back(first);
+
+		for(int i=1; i<nrTemplateImages; i++){
+			Cluster lastCluster = clusterfuck.back();
+			if(overallScore[i] - lastCluster.avarage < delta){
+				insertValueInCluster(lastCluster,i);
+				clusterfuck.erase(clusterfuck.end() -1);
+				clusterfuck.push_back(lastCluster);
+			}
+			else{
+				Cluster next;
+				insertValueInCluster(next,i);
+				clusterfuck.push_back(next);
+			}
+		}
 	}
 
 	void CDibView::OnPrsProiect()
 	{
 		BEGIN_PROCESSING();		
-		
-		Tree t;
-		t.insert(10);
-
 		loadTemplateImages();
 
 		// this is done quickly and doesn't exceed max space
@@ -2114,26 +2210,57 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		//! here, one can override the nrTemplateImages on which the algorhithm should run on
 
 		nrTemplateImages = 10;
+		bool skip = true;
 
-		// however, we have to use the same arcs/selectedArcs and vNew in order to not exceed the space => reuse
-		for(int m = 0; m<nrTemplateImages;m++){
-			constructCompleteGraph(m);
-			prim(m);
-			trunkBigEdges();
-			
-			initArrays();
-			// dfs
-			for (int i = 0; i<vNewCounter; i++){
-				if(vNew[i].w == NOT_VISITED){
-					dfs(vNew[i]);
-					currentClass++;
+		if(skip){
+			mockOverallScore();
+		}
+		else{
+			// however, we have to use the same arcs/selectedArcs and vNew in order to not exceed the space => reuse
+			for(int m = 0; m<nrTemplateImages;m++){
+				constructCompleteGraph(m);
+				prim(m);
+				trunkBigEdges();
+
+				initArrays();
+				// dfs
+				for (int i = 0; i<vNewCounter; i++){
+					if(vNew[i].w == NOT_VISITED){
+						dfs(vNew[i]);
+						currentClass++;
+					}
 				}
+
+				// compute score
+				for(int i = 0; i<selectedArcsCounter; i++){
+					overallScore[m]+= selectedArcs[i].w;
+				}
+
+				reset();
 			}
-			for(int i = 0; i<selectedArcsCounter; i++){
-				overallScore[m]+= selectedArcs[i].w;
+		}
+
+		sortArray(overallScore,nrTemplateImages);
+
+		vector<Cluster> clusterfuck;
+		initClusters(clusterfuck);
+
+		for(int i=0; i<clusterfuck.size();i++){
+			BEGIN_PROCESSING();
+			Cluster cluster = clusterfuck.at(i);
+			for(int imageIndex=0; imageIndex < cluster.size; imageIndex++){
+				// scaledImages[imageIndex] <-- the scaled image
+				for (int i=0;i<dwHeight/2;i++)
+				{
+					// CUM!
+					for (int j=0;j<dwWidth/2 + 80*imageIndex;j++)
+					{
+						lpDst[i*w+j] = (int) scaledImages[0][i*w+j];
+					}
+				}				
 			}
 
-			reset();
+			END_PROCESSING("ClusterMania");
 		}
 
 		for (int i = 0; i < vNewCounter; i++)
