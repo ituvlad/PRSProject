@@ -1868,7 +1868,7 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 	};
 	const int NOT_VISITED = -100;
 	const int ACTUALLY_MATA = -666;
-#define RADIUS 1.9
+#define RADIUS 10
 	WeightedPoint unclassifiedPoints[140][100000],vNew[100000];
 	ArcT arcs[1000000],selectedArcs[1000000];
 	int unclassfiedPointsCounter[128], arcsCounter, selectedArcsCounter,vNewCounter;
@@ -2304,7 +2304,66 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 
 	void CDibView::OnPrsProiect2()
 	{
+		BEGIN_PROCESSING();
+		int m = 0;
+		for (int i = 0; i < dwHeight ; i++)
+		{
+			for (int j=0; j < dwWidth; j++)
+			{
+				if (lpSrc[i*w+j] != 255)
+				{
+					unclassifiedPoints[m][unclassfiedPointsCounter[m]].x = i;
+					unclassifiedPoints[m][unclassfiedPointsCounter[m]].y = j;
+					unclassifiedPoints[m][unclassfiedPointsCounter[m]].w = -1;
+					unclassfiedPointsCounter[m]++;
+				}
+			}
+		}
+		constructCompleteGraph(0);
+		prim(0);
+		trunkBigEdges();
 
+		initArrays();
+		// dfs
+		for (int i = 0; i<vNewCounter; i++){
+			if(vNew[i].w == NOT_VISITED){
+				dfs(vNew[i]);
+				currentClass++;
+			}
+		}
+
+				double overallScore = 0;
+
+		for(int i = 0; i<selectedArcsCounter; i++){
+			overallScore+= selectedArcs[i].w;
+		}
+
+		for (int i = 0; i < vNewCounter; i++)
+		{
+			switch ((int)vNew[i].w)
+			{
+			case 0: 
+				lpDst[vNew[i].x * w + vNew[i].y] = 255;
+				break;
+			case 1: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 255;
+				break;
+			case 2: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 255;
+				break;
+			case 3: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 4;
+				break;
+			case 4: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 5;
+				break;
+			case 5: 
+				lpDst[vNew[i].x*w+vNew[i].y] = 6;
+				break;
+			}
+		}
+
+		END_PROCESSING("ClusterMania");
 
 
 	}
