@@ -2138,18 +2138,19 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		}
 	}
 
-	void mockOverallScore(){
-		overallScore[0]=846.81;
-		overallScore[1]=1092.5533;
-		overallScore[2]=1121.050;
-		overallScore[3]=1182.276;
-		overallScore[4]=845.2;
-		overallScore[5]=842.3;
-		overallScore[6]=940.3;
-		overallScore[7]=944.4;
-		overallScore[8]=950.3;
-		overallScore[9]=950.4;
+	void takePrecomputedScore(){
+		fstream myfile("precomputed.txt", std::ios_base::in);
+
+		float a;
+		int i=0;
+		while (myfile >> a)
+		{
+			overallScore[i] = a;
+			i++;
+		}
+	
 	}
+
 	struct Cluster{
 		int indexes[120];
 		double values[120];
@@ -2176,7 +2177,8 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 		}
 		c.avarage = sum/(double) c.size;
 	}
-	const int delta = 10;
+	const int delta = 50;
+
 	void initClusters(vector<Cluster> &clusterfuck){
 		Cluster first;
 		insertValueInCluster(first,0);
@@ -2210,11 +2212,11 @@ IMPLEMENT_DYNCREATE(CDibView, CScrollView)
 
 		//! here, one can override the nrTemplateImages on which the algorhithm should run on
 
-		nrTemplateImages = 120;
-		bool skip = false;
+		nrTemplateImages = 27;
+		bool skip = true;
 
 		if(skip){
-			mockOverallScore();
+			takePrecomputedScore();
 		}
 		else{
 			// however, we have to use the same arcs/selectedArcs and vNew in order to not exceed the space => reuse
